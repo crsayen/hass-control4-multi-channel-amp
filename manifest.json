@@ -1,0 +1,9 @@
+{
+    "domain": "c4_amp",
+    "name": "C4 AMP",
+    "documentation": "",
+    "dependencies": [],
+    "codeowners": ["@crsayen"],
+    "version": "0.1",
+    "requirements": []
+}
