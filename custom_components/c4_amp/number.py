@@ -23,50 +23,28 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
 
 class C4ZoneVolumeSlider(NumberEntity, RestoreEntity):
+    _attr_should_poll = False
+    _attr_native_min_value = 0.0
+    _attr_native_max_value = 1.0
+    _attr_native_step = 0.01
+
     def __init__(self, entity_key, config, state):
         self._entity_key = entity_key
-        self._name = f"{config['name']} Volume"
+        self._attr_name = f"{config['name']} Volume"
         self._channel = config["channel"]
         self._ip = config["ip"]
         self._port = config["port"]
         self._state_ref = state
-        self._available = True
+        self._attr_available = True
+        self._attr_unique_id = f"c4_amp_{self._ip}_ch{self._channel}_volume"
         self._debounce_task: asyncio.Task | None = None
         self._reconnect_task: asyncio.Task | None = None
 
         self._state_ref.setdefault("volume", 0.5)
 
     @property
-    def name(self):
-        return self._name
-
-    @property
-    def should_poll(self) -> bool:
-        return False
-
-    @property
-    def unique_id(self):
-        return f"c4_amp_{self._ip}_ch{self._channel}_volume"
-
-    @property
-    def available(self) -> bool:
-        return self._available
-
-    @property
     def native_value(self):
         return float(self._state_ref.get("volume", 0.0))
-
-    @property
-    def native_min_value(self):
-        return 0.0
-
-    @property
-    def native_max_value(self):
-        return 1.0
-
-    @property
-    def native_step(self):
-        return 0.01
 
     async def async_added_to_hass(self):
         await super().async_added_to_hass()
@@ -92,18 +70,18 @@ class C4ZoneVolumeSlider(NumberEntity, RestoreEntity):
     @callback
     def _handle_result(self, success: bool) -> None:
         if success:
-            if not self._available:
-                self._available = True
+            if not self._attr_available:
+                self._attr_available = True
                 self.async_write_ha_state()
         else:
-            self._available = False
+            self._attr_available = False
             self.async_write_ha_state()
             if not self._reconnect_task or self._reconnect_task.done():
                 self._reconnect_task = self.hass.async_create_task(self._reconnect())
 
     async def _reconnect(self) -> None:
         try:
-            while not self._available:
+            while not self._attr_available:
                 await asyncio.sleep(RECONNECT_DELAY)
                 volume = self._state_ref.get("volume", 0.5)
                 self._handle_result(
@@ -113,7 +91,7 @@ class C4ZoneVolumeSlider(NumberEntity, RestoreEntity):
             pass
 
     async def async_set_native_value(self, value: float) -> None:
-        value = max(self.native_min_value, min(self.native_max_value, float(value)))
+        value = max(self._attr_native_min_value, min(self._attr_native_max_value, float(value)))
 
         # Update state immediately so the UI stays responsive while dragging.
         self._state_ref["volume"] = value

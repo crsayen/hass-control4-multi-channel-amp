@@ -22,36 +22,28 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
 
 class C4ZoneMediaPlayer(MediaPlayerEntity, RestoreEntity):
+    _attr_should_poll = False
+    _attr_supported_features = (
+        MediaPlayerEntityFeature.TURN_ON
+        | MediaPlayerEntityFeature.TURN_OFF
+        | MediaPlayerEntityFeature.SELECT_SOURCE
+    )
+
     def __init__(self, entity_key, config, state):
         self._entity_key = entity_key
-        self._name = config["name"]
+        self._attr_name = config["name"]
         self._channel = config["channel"]
         self._ip = config["ip"]
         self._port = config["port"]
         self._sources_map = config.get("sources", {})  # id -> name
-        self._sources = list(self._sources_map.values())
         self._state_ref = state
-        self._available = True
+        self._attr_available = True
+        self._attr_unique_id = f"c4_amp_{self._ip}_ch{self._channel}_player"
+        self._attr_source_list = list(self._sources_map.values())
         self._reconnect_task: asyncio.Task | None = None
 
         self._state_ref.setdefault("power", False)
         self._state_ref.setdefault("source", None)
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def should_poll(self) -> bool:
-        return False
-
-    @property
-    def unique_id(self):
-        return f"c4_amp_{self._ip}_ch{self._channel}_player"
-
-    @property
-    def available(self) -> bool:
-        return self._available
 
     @property
     def state(self):
@@ -60,18 +52,6 @@ class C4ZoneMediaPlayer(MediaPlayerEntity, RestoreEntity):
     @property
     def source(self):
         return self._state_ref.get("source")
-
-    @property
-    def source_list(self):
-        return self._sources
-
-    @property
-    def supported_features(self):
-        return (
-            MediaPlayerEntityFeature.TURN_ON
-            | MediaPlayerEntityFeature.TURN_OFF
-            | MediaPlayerEntityFeature.SELECT_SOURCE
-        )
 
     @property
     def extra_state_attributes(self):
@@ -101,11 +81,11 @@ class C4ZoneMediaPlayer(MediaPlayerEntity, RestoreEntity):
     @callback
     def _handle_result(self, success: bool) -> None:
         if success:
-            if not self._available:
-                self._available = True
+            if not self._attr_available:
+                self._attr_available = True
                 self.async_write_ha_state()
         else:
-            self._available = False
+            self._attr_available = False
             self.async_write_ha_state()
             if not self._reconnect_task or self._reconnect_task.done():
                 self._reconnect_task = self.hass.async_create_task(self._reconnect())
@@ -119,14 +99,14 @@ class C4ZoneMediaPlayer(MediaPlayerEntity, RestoreEntity):
 
     async def _reconnect(self) -> None:
         try:
-            while not self._available:
+            while not self._attr_available:
                 await asyncio.sleep(RECONNECT_DELAY)
                 self._handle_result(await self._ping())
         except asyncio.CancelledError:
             pass
 
     async def async_turn_on(self):
-        source = self._sources[0] if self._sources else None
+        source = self._attr_source_list[0] if self._attr_source_list else None
         if not source:
             return
 
@@ -150,12 +130,12 @@ class C4ZoneMediaPlayer(MediaPlayerEntity, RestoreEntity):
             self.async_write_ha_state()
 
     async def async_select_source(self, source):
-        if source not in self._sources:
+        if source not in self._attr_source_list:
             return
 
         source_id = self._get_source_id(source)
         if source_id is None:
-            _LOGGER.warning("Unknown source '%s' for %s", source, self._name)
+            _LOGGER.warning("Unknown source '%s' for %s", source, self._attr_name)
             return
 
         success = await amp_channel_on(self._channel, source_id, self._ip, self._port)
