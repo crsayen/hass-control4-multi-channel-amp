@@ -1,12 +1,25 @@
 import logging
 
+import voluptuous as vol
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.discovery import async_load_platform
 from homeassistant.helpers.typing import ConfigType
 
 _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = "c4_amp"
+
+ZONE_SCHEMA = vol.Schema({
+    vol.Required("ip"): cv.string,
+    vol.Required("channel"): vol.All(vol.Coerce(int), vol.Range(min=1, max=8)),
+    vol.Optional("port"): cv.port,  # accepted for backwards compat, ignored (hardcoded to 8750)
+    vol.Optional("sources", default={}): {vol.Coerce(int): cv.string},
+})
+
+CONFIG_SCHEMA = vol.Schema({
+    DOMAIN: {cv.string: ZONE_SCHEMA},
+}, extra=vol.ALLOW_EXTRA)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
