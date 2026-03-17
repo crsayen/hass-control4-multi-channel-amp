@@ -1,7 +1,6 @@
 import logging
 
 from homeassistant.core import HomeAssistant
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.discovery import async_load_platform
 from homeassistant.helpers.typing import ConfigType
 
@@ -45,9 +44,4 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     await async_load_platform(hass, "number", DOMAIN, {}, config)
     await async_load_platform(hass, "select", DOMAIN, {}, config)
 
-    return True
-
-
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up via config entry (not used yet)."""
     return True

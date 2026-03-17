@@ -92,29 +92,36 @@ class C4ZoneMediaPlayer(MediaPlayerEntity, RestoreEntity):
             return
 
         source_id = self._get_source_id(source)
-        await amp_channel_on(self._channel, source_id, self._ip)
-        self._state_ref["power"] = True
-        self._state_ref["source"] = source
-        self.async_write_ha_state()
+        if source_id is None:
+            return
+
+        if await amp_channel_on(self._channel, source_id, self._ip):
+            self._state_ref["power"] = True
+            self._state_ref["source"] = source
+            self.async_write_ha_state()
 
     async def async_turn_off(self):
-        await amp_channel_off(self._channel, self._ip)
-        self._state_ref["power"] = False
-        self._state_ref["source"] = None
-        self.async_write_ha_state()
+        if await amp_channel_off(self._channel, self._ip):
+            self._state_ref["power"] = False
+            self._state_ref["source"] = None
+            self.async_write_ha_state()
 
     async def async_select_source(self, source):
         if source not in self._sources:
             return
 
         source_id = self._get_source_id(source)
-        await amp_channel_on(self._channel, source_id, self._ip)
-        self._state_ref["power"] = True
-        self._state_ref["source"] = source
-        self.async_write_ha_state()
+        if source_id is None:
+            _LOGGER.warning("Unknown source '%s' for %s", source, self._name)
+            return
 
-    def _get_source_id(self, source):
+        if await amp_channel_on(self._channel, source_id, self._ip):
+            self._state_ref["power"] = True
+            self._state_ref["source"] = source
+            self.async_write_ha_state()
+
+    def _get_source_id(self, source: str) -> int | None:
         for k, v in self._sources_map.items():
             if v == source:
                 return int(k)
-        return 1
+        return None
