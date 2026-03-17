@@ -4,7 +4,16 @@ A Home Assistant custom integration for controlling multi-zone audio amplifiers 
 
 ## Installation
 
-Copy the `c4_amp` directory into your `custom_components` folder, then add configuration to `configuration.yaml`.
+### HACS (recommended)
+
+1. Add this repository to HACS as a custom repository (type: Integration)
+2. Install "Control4 Multi-Channel Amplifier" from HACS
+3. Restart Home Assistant
+4. Add configuration to `configuration.yaml`
+
+### Manual
+
+Copy `custom_components/c4_amp/` into your Home Assistant `custom_components` folder, restart, then add configuration to `configuration.yaml`.
 
 ## Configuration
 
