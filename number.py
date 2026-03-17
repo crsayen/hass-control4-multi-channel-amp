@@ -28,6 +28,7 @@ class C4ZoneVolumeSlider(NumberEntity, RestoreEntity):
         self._name = f"{config['name']} Volume"
         self._channel = config["channel"]
         self._ip = config["ip"]
+        self._port = config["port"]
         self._state_ref = state
         self._debounce_task: asyncio.Task | None = None
 
@@ -95,7 +96,7 @@ class C4ZoneVolumeSlider(NumberEntity, RestoreEntity):
     async def _send_volume(self, value: float) -> None:
         try:
             await asyncio.sleep(DEBOUNCE_DELAY)
-            if not await amp_channel_volume(self._channel, value, self._ip):
+            if not await amp_channel_volume(self._channel, value, self._ip, self._port):
                 # Command failed — revert the optimistic state update.
                 self._state_ref["volume"] = value
                 self.async_write_ha_state()

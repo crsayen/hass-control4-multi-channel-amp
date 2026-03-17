@@ -26,6 +26,7 @@ class C4ZoneSourceSelect(SelectEntity, RestoreEntity):
         self._name = f"{config['name']} Source"
         self._channel = config["channel"]
         self._ip = config["ip"]
+        self._port = config["port"]
         self._sources_map = config.get("sources", {})  # id -> name
         self._state_ref = state
 
@@ -69,7 +70,7 @@ class C4ZoneSourceSelect(SelectEntity, RestoreEntity):
             _LOGGER.warning("Unknown source '%s' for %s", option, self._name)
             return
 
-        if await amp_channel_on(self._channel, source_id, self._ip):
+        if await amp_channel_on(self._channel, source_id, self._ip, self._port):
             self._state_ref["power"] = True
             self._state_ref["source"] = option
             self.async_write_ha_state()
