@@ -4,6 +4,7 @@
     "documentation": "https://github.com/crsayen/hass-control4-multi-channel-amp",
     "dependencies": [],
     "codeowners": ["@crsayen"],
-    "version": "0.1",
+    "version": "0.1.0",
+    "iot_class": "assumed_state",
     "requirements": []
 }
