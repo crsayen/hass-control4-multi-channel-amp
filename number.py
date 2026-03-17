@@ -74,6 +74,6 @@ class C4ZoneVolumeSlider(NumberEntity, RestoreEntity):
 
     async def async_set_native_value(self, value: float) -> None:
         value = max(self.native_min_value, min(self.native_max_value, float(value)))
-        amp_channel_volume(self._channel, value, self._ip)
+        await amp_channel_volume(self._channel, value, self._ip)
         self._state_ref["volume"] = value
         self.async_write_ha_state()

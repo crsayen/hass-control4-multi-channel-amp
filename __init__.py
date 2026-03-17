@@ -43,6 +43,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     await async_load_platform(hass, "media_player", DOMAIN, {}, config)
     await async_load_platform(hass, "switch", DOMAIN, {}, config)
     await async_load_platform(hass, "number", DOMAIN, {}, config)
+    await async_load_platform(hass, "select", DOMAIN, {}, config)
 
     return True
 
