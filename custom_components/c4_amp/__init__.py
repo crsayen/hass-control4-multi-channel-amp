@@ -10,6 +10,7 @@ from .udp_commands import DEFAULT_PORT
 _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = "c4_amp"
+RECONNECT_DELAY = 30  # seconds
 
 ZONE_SCHEMA = vol.Schema({
     vol.Required("ip"): cv.string,

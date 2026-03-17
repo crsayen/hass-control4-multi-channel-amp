@@ -3,14 +3,13 @@ import logging
 
 from homeassistant.components.media_player import MediaPlayerEntity, MediaPlayerEntityFeature
 from homeassistant.const import STATE_OFF, STATE_ON
+from homeassistant.core import callback
 from homeassistant.helpers.restore_state import RestoreEntity
 
-from . import DOMAIN
+from . import DOMAIN, RECONNECT_DELAY
 from .udp_commands import amp_channel_off, amp_channel_on
 
 _LOGGER = logging.getLogger(__name__)
-
-RECONNECT_DELAY = 30  # seconds
 
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
@@ -99,6 +98,7 @@ class C4ZoneMediaPlayer(MediaPlayerEntity, RestoreEntity):
         if self._reconnect_task:
             self._reconnect_task.cancel()
 
+    @callback
     def _handle_result(self, success: bool) -> None:
         if success:
             if not self._available:
