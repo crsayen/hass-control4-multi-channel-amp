@@ -69,10 +69,10 @@ class C4ZoneSourceSelect(SelectEntity, RestoreEntity):
             _LOGGER.warning("Unknown source '%s' for %s", option, self._name)
             return
 
-        await amp_channel_on(self._channel, source_id, self._ip)
-        self._state_ref["power"] = True
-        self._state_ref["source"] = option
-        self.async_write_ha_state()
+        if await amp_channel_on(self._channel, source_id, self._ip):
+            self._state_ref["power"] = True
+            self._state_ref["source"] = option
+            self.async_write_ha_state()
 
     def _get_source_id(self, source: str) -> int | None:
         for k, v in self._sources_map.items():

@@ -1,7 +1,7 @@
 {
     "domain": "c4_amp",
     "name": "C4 AMP",
-    "documentation": "",
+    "documentation": "https://github.com/crsayen/hass-control4-multi-channel-amp",
     "dependencies": [],
     "codeowners": ["@crsayen"],
     "version": "0.1",

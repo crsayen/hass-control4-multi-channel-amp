@@ -72,13 +72,13 @@ class C4ZonePowerSwitch(SwitchEntity, RestoreEntity):
     async def async_turn_on(self, **kwargs):
         if self._sources:
             first_source_id = list(self._sources.keys())[0]
-            await amp_channel_on(self._channel, int(first_source_id), self._ip)
-            self._state_ref["power"] = True
-            self._state_ref["source"] = self._sources[first_source_id]
-            self.async_write_ha_state()
+            if await amp_channel_on(self._channel, int(first_source_id), self._ip):
+                self._state_ref["power"] = True
+                self._state_ref["source"] = self._sources[first_source_id]
+                self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs):
-        await amp_channel_off(self._channel, self._ip)
-        self._state_ref["power"] = False
-        self._state_ref["source"] = None
-        self.async_write_ha_state()
+        if await amp_channel_off(self._channel, self._ip):
+            self._state_ref["power"] = False
+            self._state_ref["source"] = None
+            self.async_write_ha_state()
