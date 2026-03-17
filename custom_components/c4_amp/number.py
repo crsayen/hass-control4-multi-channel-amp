@@ -2,15 +2,15 @@ import asyncio
 import logging
 
 from homeassistant.components.number import NumberEntity
+from homeassistant.core import callback
 from homeassistant.helpers.restore_state import RestoreEntity
 
-from . import DOMAIN
+from . import DOMAIN, RECONNECT_DELAY
 from .udp_commands import amp_channel_volume
 
 _LOGGER = logging.getLogger(__name__)
 
-DEBOUNCE_DELAY = 0.3   # seconds
-RECONNECT_DELAY = 30   # seconds
+DEBOUNCE_DELAY = 0.3  # seconds
 
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
@@ -89,6 +89,7 @@ class C4ZoneVolumeSlider(NumberEntity, RestoreEntity):
         if self._reconnect_task:
             self._reconnect_task.cancel()
 
+    @callback
     def _handle_result(self, success: bool) -> None:
         if success:
             if not self._available:
