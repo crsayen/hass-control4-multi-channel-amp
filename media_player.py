@@ -26,6 +26,7 @@ class C4ZoneMediaPlayer(MediaPlayerEntity, RestoreEntity):
         self._name = config["name"]
         self._channel = config["channel"]
         self._ip = config["ip"]
+        self._port = config["port"]
         self._sources_map = config.get("sources", {})  # id -> name
         self._sources = list(self._sources_map.values())
         self._state_ref = state
@@ -95,13 +96,13 @@ class C4ZoneMediaPlayer(MediaPlayerEntity, RestoreEntity):
         if source_id is None:
             return
 
-        if await amp_channel_on(self._channel, source_id, self._ip):
+        if await amp_channel_on(self._channel, source_id, self._ip, self._port):
             self._state_ref["power"] = True
             self._state_ref["source"] = source
             self.async_write_ha_state()
 
     async def async_turn_off(self):
-        if await amp_channel_off(self._channel, self._ip):
+        if await amp_channel_off(self._channel, self._ip, self._port):
             self._state_ref["power"] = False
             self._state_ref["source"] = None
             self.async_write_ha_state()
@@ -115,7 +116,7 @@ class C4ZoneMediaPlayer(MediaPlayerEntity, RestoreEntity):
             _LOGGER.warning("Unknown source '%s' for %s", source, self._name)
             return
 
-        if await amp_channel_on(self._channel, source_id, self._ip):
+        if await amp_channel_on(self._channel, source_id, self._ip, self._port):
             self._state_ref["power"] = True
             self._state_ref["source"] = source
             self.async_write_ha_state()

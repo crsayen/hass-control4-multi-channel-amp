@@ -1,6 +1,6 @@
 # Control4 Multi-Channel Amplifier
 
-A Home Assistant custom integration for controlling multi-zone audio amplifiers from Control4. Communicates with the amp over UDP on port 8750.
+A Home Assistant custom integration for controlling multi-zone audio amplifiers from Control4. Communicates with the amp over UDP (default port 8750).
 
 ## Installation
 
@@ -28,6 +28,7 @@ c4_amp:
 |-----|----------|-------------|
 | `ip` | Yes | IP address of the amp |
 | `channel` | Yes | Output channel number (1–8) |
+| `port` | No | UDP port (default: `8750`) |
 | `sources` | No | Map of input ID → friendly name |
 
 ## Entities
