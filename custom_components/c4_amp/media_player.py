@@ -7,7 +7,7 @@ from homeassistant.core import callback
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from . import DOMAIN, RECONNECT_DELAY
-from .udp_commands import amp_channel_off, amp_channel_on
+from .udp_commands import amp_channel_off, amp_channel_on, cancel_and_replace
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     for entity_key, data in hass.data[DOMAIN].items():
         conf = data["config"]
         state = data["state"]
-        entities.append(C4ZoneMediaPlayer(entity_key, conf, state))
+        entities.append(C4ZoneMediaPlayer(entity_key, conf, state, data))
     async_add_entities(entities)
 
 
@@ -29,7 +29,7 @@ class C4ZoneMediaPlayer(MediaPlayerEntity, RestoreEntity):
         | MediaPlayerEntityFeature.SELECT_SOURCE
     )
 
-    def __init__(self, entity_key, config, state):
+    def __init__(self, entity_key, config, state, data):
         self._entity_key = entity_key
         self._attr_name = config["name"]
         self._channel = config["channel"]
@@ -37,6 +37,7 @@ class C4ZoneMediaPlayer(MediaPlayerEntity, RestoreEntity):
         self._port = config["port"]
         self._sources_map = config.get("sources", {})  # id -> name
         self._state_ref = state
+        self._data = data
         self._attr_available = True
         self._attr_unique_id = f"c4_amp_{self._ip}_ch{self._channel}_player"
         self._attr_source_list = list(self._sources_map.values())
@@ -90,18 +91,22 @@ class C4ZoneMediaPlayer(MediaPlayerEntity, RestoreEntity):
             if not self._reconnect_task or self._reconnect_task.done():
                 self._reconnect_task = self.hass.async_create_task(self._reconnect())
 
-    async def _ping(self) -> bool:
+    async def _ping(self) -> bool | None:
+        cancel = cancel_and_replace(self._data)
         source = self._state_ref.get("source")
         source_id = self._get_source_id(source) if source else None
         if self._state_ref.get("power") and source_id:
-            return await amp_channel_on(self._channel, source_id, self._ip, self._port)
-        return await amp_channel_off(self._channel, self._ip, self._port)
+            return await amp_channel_on(self._channel, source_id, self._ip, self._port, cancel=cancel)
+        return await amp_channel_off(self._channel, self._ip, self._port, cancel=cancel)
 
     async def _reconnect(self) -> None:
         try:
             while not self._attr_available:
                 await asyncio.sleep(RECONNECT_DELAY)
-                self._handle_result(await self._ping())
+                result = await self._ping()
+                if result is None:
+                    return
+                self._handle_result(result)
         except asyncio.CancelledError:
             pass
 
@@ -114,17 +119,23 @@ class C4ZoneMediaPlayer(MediaPlayerEntity, RestoreEntity):
         if source_id is None:
             return
 
-        success = await amp_channel_on(self._channel, source_id, self._ip, self._port)
-        self._handle_result(success)
-        if success:
+        cancel = cancel_and_replace(self._data)
+        result = await amp_channel_on(self._channel, source_id, self._ip, self._port, cancel=cancel)
+        if result is None:
+            return
+        self._handle_result(result)
+        if result:
             self._state_ref["power"] = True
             self._state_ref["source"] = source
             self.async_write_ha_state()
 
     async def async_turn_off(self):
-        success = await amp_channel_off(self._channel, self._ip, self._port)
-        self._handle_result(success)
-        if success:
+        cancel = cancel_and_replace(self._data)
+        result = await amp_channel_off(self._channel, self._ip, self._port, cancel=cancel)
+        if result is None:
+            return
+        self._handle_result(result)
+        if result:
             self._state_ref["power"] = False
             self._state_ref["source"] = None
             self.async_write_ha_state()
@@ -138,9 +149,12 @@ class C4ZoneMediaPlayer(MediaPlayerEntity, RestoreEntity):
             _LOGGER.warning("Unknown source '%s' for %s", source, self._attr_name)
             return
 
-        success = await amp_channel_on(self._channel, source_id, self._ip, self._port)
-        self._handle_result(success)
-        if success:
+        cancel = cancel_and_replace(self._data)
+        result = await amp_channel_on(self._channel, source_id, self._ip, self._port, cancel=cancel)
+        if result is None:
+            return
+        self._handle_result(result)
+        if result:
             self._state_ref["power"] = True
             self._state_ref["source"] = source
             self.async_write_ha_state()

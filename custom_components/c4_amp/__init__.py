@@ -1,4 +1,5 @@
 import logging
+import threading
 
 import voluptuous as vol
 from homeassistant.core import HomeAssistant
@@ -54,6 +55,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                 "volume": 0.5,
                 "source": None,
             },
+            "cancel": threading.Event(),
         }
 
     await async_load_platform(hass, "media_player", DOMAIN, {}, config)

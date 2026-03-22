@@ -6,7 +6,7 @@ from homeassistant.core import callback
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from . import DOMAIN, RECONNECT_DELAY
-from .udp_commands import amp_channel_volume
+from .udp_commands import amp_channel_volume, cancel_and_replace
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     for entity_key, data in hass.data[DOMAIN].items():
         conf = data["config"]
         state = data["state"]
-        entities.append(C4ZoneVolumeSlider(entity_key, conf, state))
+        entities.append(C4ZoneVolumeSlider(entity_key, conf, state, data))
     async_add_entities(entities)
 
 
@@ -28,13 +28,14 @@ class C4ZoneVolumeSlider(NumberEntity, RestoreEntity):
     _attr_native_max_value = 1.0
     _attr_native_step = 0.01
 
-    def __init__(self, entity_key, config, state):
+    def __init__(self, entity_key, config, state, data):
         self._entity_key = entity_key
         self._attr_name = f"{config['name']} Volume"
         self._channel = config["channel"]
         self._ip = config["ip"]
         self._port = config["port"]
         self._state_ref = state
+        self._data = data
         self._attr_available = True
         self._attr_unique_id = f"c4_amp_{self._ip}_ch{self._channel}_volume"
         self._debounce_task: asyncio.Task | None = None
@@ -83,10 +84,12 @@ class C4ZoneVolumeSlider(NumberEntity, RestoreEntity):
         try:
             while not self._attr_available:
                 await asyncio.sleep(RECONNECT_DELAY)
+                cancel = cancel_and_replace(self._data)
                 volume = self._state_ref.get("volume", 0.5)
-                self._handle_result(
-                    await amp_channel_volume(self._channel, volume, self._ip, self._port)
-                )
+                result = await amp_channel_volume(self._channel, volume, self._ip, self._port, cancel=cancel)
+                if result is None:
+                    return
+                self._handle_result(result)
         except asyncio.CancelledError:
             pass
 
@@ -105,8 +108,10 @@ class C4ZoneVolumeSlider(NumberEntity, RestoreEntity):
     async def _send_volume(self, value: float) -> None:
         try:
             await asyncio.sleep(DEBOUNCE_DELAY)
-            self._handle_result(
-                await amp_channel_volume(self._channel, value, self._ip, self._port)
-            )
+            cancel = cancel_and_replace(self._data)
+            result = await amp_channel_volume(self._channel, value, self._ip, self._port, cancel=cancel)
+            if result is None:
+                return
+            self._handle_result(result)
         except asyncio.CancelledError:
             pass
